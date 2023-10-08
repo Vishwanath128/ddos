@@ -1,0 +1,56 @@
+import com.hcl.intern.projects.ddos.ratelimiter.RuleRequest;
+global com.hcl.intern.projects.ddos.ratelimiter.RuleResponse ruleResponse;
+
+dialect "mvel"
+declare AlreadyProcessed
+end
+rule "Ip address based rate limit"
+    salience 1
+    when
+        not AlreadyProcessed()
+        RuleRequest(count>=2 && ipAddress != "127.0.0.1")
+    then
+        System.out.println("==========denying request=============");
+        ruleResponse.setResponse(true)
+        insert( new AlreadyProcessed() );
+end
+rule "Unique IP Address"
+    salience 2
+    when
+       not AlreadyProcessed()
+       RuleRequest(count>=10 && ipAddress=="127.0.0.1")
+      then
+        System.out.println("==========denying request=============");
+        ruleResponse.setResponse(true)
+        insert( new AlreadyProcessed() );
+end
+rule "WhiteList IP Address"
+    salience 3
+    when
+       not AlreadyProcessed()
+       RuleRequest(ipAddress=="127.1.1.1")
+      then
+        System.out.println("==========allowing request=============");
+        ruleResponse.setResponse(false)
+        insert( new AlreadyProcessed() );
+end
+rule "Blacklist IP Address"
+    salience 4
+    when
+       not AlreadyProcessed()
+       RuleRequest(ipAddress=="127.2.2.2" || ipAddress=="127.3.3.3")
+      then
+        System.out.println("==========denying request=============");
+        ruleResponse.setResponse(true)
+        insert( new AlreadyProcessed() );
+end
+rule "Blacklist Iran"
+    salience 5
+    when
+       not AlreadyProcessed()
+       RuleRequest(geoLocation=="IR")
+      then
+        System.out.println("==========denying request=============");
+        ruleResponse.setResponse(true)
+        insert( new AlreadyProcessed() );
+end
